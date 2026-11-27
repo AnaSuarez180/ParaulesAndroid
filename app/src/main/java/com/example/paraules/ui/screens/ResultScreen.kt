@@ -1,6 +1,8 @@
 package com.example.paraules.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -36,21 +38,26 @@ fun ResultScreen(selectedWords: List<String>, onPlayAgain: () -> Unit) {
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = PanelGreen)
         ) {
-            Column(Modifier.fillMaxSize().padding(18.dp)) {
-                Text("La teva frase", color = Leaf, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AccessibilityFont)
-                Text(
-                    phrase,
-                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 12.dp),
-                    color = TitleGreen,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = AccessibilityFont,
-                    textAlign = TextAlign.Center
-                )
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    selectedWords.forEachIndexed { index, word ->
-                        ResultWordRow(index + 1, word)
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                item {
+                    Column(Modifier.fillMaxWidth()) {
+                        Text("La teva frase", color = Leaf, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AccessibilityFont)
+                        Text(
+                            phrase,
+                            modifier = Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 6.dp),
+                            color = TitleGreen,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = AccessibilityFont,
+                            textAlign = TextAlign.Center
+                        )
                     }
+                }
+                itemsIndexed(selectedWords, key = { index, word -> "$index-$word" }) { index, word ->
+                    ResultWordRow(index + 1, word)
                 }
             }
         }
@@ -61,7 +68,7 @@ fun ResultScreen(selectedWords: List<String>, onPlayAgain: () -> Unit) {
             shape = RoundedCornerShape(20.dp),
             colors = ButtonDefaults.buttonColors(containerColor = ActionGreen, contentColor = Color.White)
         ) {
-            Text("Torna a jugar", fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = AccessibilityFont)
+            Text("Torna a començar", fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = AccessibilityFont)
         }
     }
 }
@@ -86,7 +93,7 @@ private fun ResultWordRow(number: Int, word: String) {
 fun ResultScreenPreview() {
     ParaulesTheme { 
         ResultScreen(
-            selectedWords = listOf("Vull", "aigua")
+            selectedWords = listOf("Vull", "beure", "aigua", "ara")
         ) { }
     }
 }

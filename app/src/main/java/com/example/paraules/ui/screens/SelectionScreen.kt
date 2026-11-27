@@ -2,6 +2,7 @@ package com.example.paraules.ui.screens
 
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.paraules.data.MAX_WORDS
+import com.example.paraules.data.MIN_WORDS
 import com.example.paraules.data.WordCategory
 import com.example.paraules.ui.theme.*
 @Composable
@@ -74,7 +76,13 @@ fun SelectionScreen(
             Spacer(Modifier.width(12.dp))
             ActionButton(label = "Copiar", color = ActionYellow, onClick = onCopy, textColor = TitleGreen)
             Spacer(Modifier.width(12.dp))
-            ActionButton(label = "Finalitzar", color = ActionGreen, onClick = onFinish, textColor = Color.White)
+            ActionButton(
+                label = "Finalitzar",
+                color = ActionGreen,
+                onClick = onFinish,
+                textColor = Color.White,
+                enabled = selectedWords.size >= MIN_WORDS
+            )
         }
     }
 }
@@ -134,12 +142,11 @@ private fun CategoryHeader(name: String, expanded: Boolean, onClick: () -> Unit)
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CategoryWords(words: List<String>, selectedWords: List<String>, onToggleWord: (String) -> Unit) {
-    FlowRow(
+    Column(
         modifier = Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         words.forEach { word ->
@@ -148,7 +155,7 @@ private fun CategoryWords(words: List<String>, selectedWords: List<String>, onTo
                 selected = selected,
                 onClick = { onToggleWord(word) },
                 label = { Text(word, fontSize = 17.sp, fontFamily = AccessibilityFont) },
-                modifier = Modifier.heightIn(min = 50.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = Color.White,
@@ -186,8 +193,13 @@ private fun SelectedWordsPanel(
                 Text("${selectedWords.size}/$MAX_WORDS", color = Leaf, fontSize = 19.sp, fontWeight = FontWeight.Bold, fontFamily = AccessibilityFont)
             }
             Spacer(Modifier.height(14.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                repeat(MAX_WORDS) { index ->
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                itemsIndexed(List(MAX_WORDS) { it }, key = { index, _ ->
+                    selectedWords.getOrNull(index) ?: "empty-$index"
+                }) { index, _ ->
                     val word = selectedWords.getOrNull(index)
                     if (word == null) EmptyWordSlot(index + 1)
                     else key(word) {
@@ -201,14 +213,6 @@ private fun SelectedWordsPanel(
                     }
                 }
             }
-            Spacer(Modifier.weight(1f))
-            Text(
-                "Mantén premut el mànec per arrossegar. També pots fer servir les fletxes.",
-                modifier = Modifier.padding(top = 8.dp),
-                color = TitleGreen,
-                fontSize = 15.sp,
-                fontFamily = AccessibilityFont
-            )
         }
     }
 }
@@ -242,27 +246,35 @@ private fun SelectedWordRow(
     val currentIndex by rememberUpdatedState(index)
     val moveWord by rememberUpdatedState(onMoveWord)
 
-    Surface(color = Color.White, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(56.dp)) {
+    Surface(
+        color = Color.White,
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .pointerInput(total, word, dragThreshold) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = { dragDistance = 0f },
+                    onDragEnd = { dragDistance = 0f },
+                    onDragCancel = { dragDistance = 0f },
+                    onDrag = { change, amount ->
+                        change.consume()
+                        dragDistance += amount.y
+                        if (dragDistance >= dragThreshold && currentIndex < total - 1) {
+                            moveWord(currentIndex, currentIndex + 1)
+                            dragDistance = 0f
+                        } else if (dragDistance <= -dragThreshold && currentIndex > 0) {
+                            moveWord(currentIndex, currentIndex - 1)
+                            dragDistance = 0f
+                        }
+                    }
+                )
+            }
+            .semantics { contentDescription = "Mantén premut $word per canviar-ne l'ordre" }
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier.width(48.dp).fillMaxHeight().pointerInput(total, word, dragThreshold) {
-                    detectDragGesturesAfterLongPress(
-                        onDragStart = { dragDistance = 0f },
-                        onDragEnd = { dragDistance = 0f },
-                        onDragCancel = { dragDistance = 0f },
-                        onDrag = { change, amount ->
-                            change.consume()
-                            dragDistance += amount.y
-                            if (dragDistance >= dragThreshold && currentIndex < total - 1) {
-                                moveWord(currentIndex, currentIndex + 1)
-                                dragDistance = 0f
-                            } else if (dragDistance <= -dragThreshold && currentIndex > 0) {
-                                moveWord(currentIndex, currentIndex - 1)
-                                dragDistance = 0f
-                            }
-                        }
-                    )
-                }.semantics { contentDescription = "Mantén premut per arrossegar $word i canviar-ne l'ordre" },
+                modifier = Modifier.width(48.dp).fillMaxHeight(),
                 contentAlignment = Alignment.Center
             ) {
                 Text("⋮⋮", color = Leaf, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = AccessibilityFont)
@@ -300,9 +312,16 @@ private fun ReorderButton(label: String, description: String, enabled: Boolean, 
 }
 
 @Composable
-private fun ActionButton(label: String, color: Color, onClick: () -> Unit, textColor: Color = TitleGreen) {
+private fun ActionButton(
+    label: String,
+    color: Color,
+    onClick: () -> Unit,
+    textColor: Color = TitleGreen,
+    enabled: Boolean = true
+) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         modifier = Modifier.widthIn(min = 132.dp).height(56.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(containerColor = color, contentColor = textColor),

@@ -18,6 +18,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.paraules.data.MAX_WORDS
+import com.example.paraules.data.MIN_WORDS
 import com.example.paraules.data.copyPhrase
 import com.example.paraules.data.loadCategories
 import com.example.paraules.ui.screens.ResultScreen
@@ -73,7 +74,7 @@ fun ParaulesNavigation() {
                             word in selectedWords -> selectedWords = selectedWords - word
                             selectedWords.size < MAX_WORDS -> selectedWords = selectedWords + word
                             else -> scope.launch {
-                                snackbarHostState.showSnackbar("Pots seleccionar fins a sis paraules.")
+                                snackbarHostState.showSnackbar("Pots seleccionar fins a deu paraules.")
                             }
                         }
                     },
@@ -101,11 +102,11 @@ fun ParaulesNavigation() {
                         }
                     },
                     onFinish = {
-                        if (selectedWords.size == MAX_WORDS) {
+                        if (selectedWords.size >= MIN_WORDS) {
                             navController.navigate(Route.RESULT) { launchSingleTop = true }
                         } else {
                             scope.launch {
-                                snackbarHostState.showSnackbar("Tria sis paraules per acabar la frase.")
+                                snackbarHostState.showSnackbar("Tria com a mínim dues paraules per continuar.")
                             }
                         }
                     }
